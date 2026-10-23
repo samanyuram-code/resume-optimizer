@@ -2,6 +2,8 @@
 
 Upload a resume (PDF or Word), paste a job description, and get **Step 1: ATS & Keyword Gap Analysis**: the job's keywords your resume is missing, and your three weakest bullet points.
 
+**Live site:** https://resume-optimizer1.vercel.app
+
 This is the first slice of the Resume & LinkedIn Optimizer. What it does and doesn't do is in [docs/STORY_1.md](docs/STORY_1.md). The full product spec is in [docs/](docs/).
 
 ## Run it on your Mac
