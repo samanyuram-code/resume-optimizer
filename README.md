@@ -45,6 +45,8 @@ Known limits on Vercel:
 
 This build adds story US-IN-3: an optional **Additional notes** box (up to 10,000 characters) and a warning that must be confirmed when the resume or job description doesn't look like English. See "Scope for HW3" in [docs/requirements.md](docs/requirements.md).
 
+To try it: upload a resume, confirm the text, paste a job description, then type in **4. Add notes (optional)** (the counter stops at 10,000). Paste a Spanish job description to see the language warning; **Analyze resume** stays disabled until you tick "I understand. Analyse it anyway".
+
 Non-goals for this build:
 - **Real payments.** Nothing is charged. Billing (US-BILL-*) is not built.
 - **Real authentication.** There is no sign-in. Anyone can use the page.
