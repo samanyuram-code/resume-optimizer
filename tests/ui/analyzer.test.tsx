@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Analyzer from "@/components/Analyzer";
-import { JOB_DESCRIPTION, RESUME_TEXT } from "../helpers/fixtures";
+import { JOB_DESCRIPTION, RESUME_TEXT, SPANISH_RESUME_TEXT } from "../helpers/fixtures";
 
 const XSS = '<img src=x onerror="window.__pwned=1">';
 
@@ -139,5 +139,52 @@ describe("Analyzer page", () => {
     await user.paste(JOB_DESCRIPTION);
     await user.click(screen.getByRole("button", { name: /analyze resume/i }));
     await waitFor(() => expect(screen.getByText("The AI declined: not allowed.")).toBeTruthy());
+  });
+
+  it("test_additional_context_field_is_optional_capped_and_sent", async () => {
+    const fetchMock = mockFetch({ fileType: "pdf", text: RESUME_TEXT, hiddenText: [], pageCount: 1 });
+    const user = userEvent.setup();
+    render(<Analyzer demoMode={false} />);
+    await uploadFile(user);
+    await user.click(await screen.findByLabelText(/i've checked this text/i));
+    await user.click(screen.getByLabelText(/^job description/i));
+    await user.paste(JOB_DESCRIPTION);
+
+    const notes = screen.getByLabelText(/additional notes/i) as HTMLTextAreaElement;
+    expect(notes.maxLength).toBe(10000);
+    // Optional: the button is enabled with the notes left empty.
+    const button = screen.getByRole("button", { name: /analyze resume/i }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+
+    await user.click(notes);
+    await user.paste("Cut vendor onboarding from 10 days to 4.");
+    expect(screen.getByText(/40 \/ 10,000 characters/)).toBeTruthy();
+    await user.click(button);
+    await screen.findByRole("heading", { name: "Step 1: ATS & Keyword Gap Analysis" });
+
+    const analyzeCall = fetchMock.mock.calls.find((c) => c[0] === "/api/analyze") as unknown as [string, RequestInit];
+    expect(JSON.parse(String(analyzeCall[1].body)).additionalContext).toBe("Cut vendor onboarding from 10 days to 4.");
+  });
+
+  it("test_non_english_warning_requires_confirmation_in_ui", async () => {
+    const fetchMock = mockFetch({ fileType: "pdf", text: SPANISH_RESUME_TEXT, hiddenText: [], pageCount: 1 });
+    const user = userEvent.setup();
+    render(<Analyzer demoMode={false} />);
+    await uploadFile(user);
+    await user.click(await screen.findByLabelText(/i've checked this text/i));
+    await user.click(screen.getByLabelText(/^job description/i));
+    await user.paste(JOB_DESCRIPTION);
+
+    expect(screen.getByText(/doesn't look like english/i)).toBeTruthy();
+    const button = screen.getByRole("button", { name: /analyze resume/i }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+
+    await user.click(screen.getByLabelText(/analyse it anyway/i));
+    expect(button.disabled).toBe(false);
+    await user.click(button);
+    await screen.findByRole("heading", { name: "Step 1: ATS & Keyword Gap Analysis" });
+
+    const analyzeCall = fetchMock.mock.calls.find((c) => c[0] === "/api/analyze") as unknown as [string, RequestInit];
+    expect(JSON.parse(String(analyzeCall[1].body)).languageConfirmed).toBe(true);
   });
 });

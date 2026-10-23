@@ -5,6 +5,7 @@ export const MIN_PDF_TEXT_CHARS = 200;
 export const MIN_JD_CHARS = 300;
 export const MAX_JD_CHARS = 20_000;
 export const MAX_RESUME_CHARS = 50_000;
+export const MAX_CONTEXT_CHARS = 10_000; // REQ-IN-08: optional additional notes
 
 // DOCX container limits (SEC-FILE-04).
 export const MAX_DOCX_EXPANDED_BYTES = 50 * 1024 * 1024;

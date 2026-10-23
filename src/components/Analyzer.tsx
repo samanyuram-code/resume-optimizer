@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
-import { MAX_JD_CHARS, MAX_UPLOAD_BYTES, MIN_JD_CHARS } from "@/lib/limits";
+import { looksNonEnglish } from "@/lib/language";
+import { MAX_CONTEXT_CHARS, MAX_JD_CHARS, MAX_UPLOAD_BYTES, MIN_JD_CHARS } from "@/lib/limits";
 import type { Step1Report } from "@/lib/step1/types";
 import styles from "./Analyzer.module.css";
 
@@ -36,18 +37,28 @@ export default function Analyzer({ demoMode }: { demoMode: boolean }) {
   const [hiddenText, setHiddenText] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
+  const [additionalContext, setAdditionalContext] = useState("");
+  const [languageConfirmed, setLanguageConfirmed] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [report, setReport] = useState<Step1Report | null>(null);
 
   const jdLength = jobDescription.trim().length;
   const jdValid = jdLength >= MIN_JD_CHARS && jdLength <= MAX_JD_CHARS;
-  const canAnalyze = resumeText !== null && resumeText.trim() !== "" && confirmed && jdValid && !analyzing;
+  const contextLength = additionalContext.trim().length;
+  const contextValid = contextLength <= MAX_CONTEXT_CHARS;
+  // REQ-IN-09: non-English input needs an explicit go-ahead. The server checks this too.
+  const nonEnglish = (resumeText !== null && looksNonEnglish(resumeText)) || looksNonEnglish(jobDescription);
+  const languageOk = !nonEnglish || languageConfirmed;
+  const canAnalyze =
+    resumeText !== null && resumeText.trim() !== "" && confirmed && jdValid && contextValid && languageOk && !analyzing;
 
   const blockers = [
     resumeText === null && "upload your resume",
     resumeText !== null && !confirmed && "confirm the extracted text",
     !jdValid && "add the full job description",
+    !contextValid && "shorten the additional notes",
+    !languageOk && "confirm the language warning",
   ].filter(Boolean) as string[];
 
   async function onFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -89,7 +100,7 @@ export default function Analyzer({ demoMode }: { demoMode: boolean }) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ resumeText, jobDescription, confirmed: true }),
+        body: JSON.stringify({ resumeText, jobDescription, additionalContext, confirmed: true, languageConfirmed: nonEnglish && languageConfirmed }),
       });
       const body = await readJson(res);
       if (!res.ok || !body?.report) {
@@ -197,6 +208,39 @@ export default function Analyzer({ demoMode }: { demoMode: boolean }) {
           {jdLength < MIN_JD_CHARS && " (at least 300 characters needed)"}
         </p>
       </section>
+
+      <section className={styles.card}>
+        <h2>4. Add notes (optional)</h2>
+        <label className={styles.label} htmlFor="additional-context">
+          Additional notes
+        </label>
+        <p className={styles.hint}>Rough notes and numbers your resume leaves out, for example results or tools you used.</p>
+        <textarea
+          id="additional-context"
+          className={styles.textarea}
+          rows={6}
+          maxLength={MAX_CONTEXT_CHARS}
+          value={additionalContext}
+          onChange={(e) => setAdditionalContext(e.target.value)}
+          placeholder="e.g. Cut vendor onboarding from 10 days to 4"
+        />
+        <p className={styles.hint}>
+          {contextLength.toLocaleString("en-US")} / {MAX_CONTEXT_CHARS.toLocaleString("en-US")} characters
+        </p>
+      </section>
+
+      {nonEnglish && (
+        <div className={styles.warning} role="alert">
+          <p>
+            <strong>Your resume or job description doesn&apos;t look like English.</strong> Only English is supported, so the results may
+            be wrong.
+          </p>
+          <label className={styles.checkbox}>
+            <input type="checkbox" checked={languageConfirmed} onChange={(e) => setLanguageConfirmed(e.target.checked)} />
+            I understand. Analyse it anyway
+          </label>
+        </div>
+      )}
 
       <div className={styles.actions}>
         <button className={styles.button} type="button" onClick={onAnalyze} disabled={!canAnalyze}>

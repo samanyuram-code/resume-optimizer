@@ -9,7 +9,7 @@ export type KeywordCategory = (typeof KEYWORD_CATEGORIES)[number];
 export type WeakBulletReason = (typeof WEAK_BULLET_REASONS)[number];
 export type KeywordStatus = "missing" | "underrepresented";
 
-export type Step1Input = { resumeText: string; jobDescription: string };
+export type Step1Input = { resumeText: string; jobDescription: string; additionalContext?: string };
 export type Step1Context = Step1Input & { bullets: Bullet[] };
 
 export type Step1Prompt = { system: string; user: string };

@@ -1,10 +1,12 @@
 import {
   ANALYSES_PER_HOUR_PER_VISITOR,
   DEFAULT_DAILY_ANALYSIS_CAP,
+  MAX_CONTEXT_CHARS,
   MAX_JD_CHARS,
   MAX_RESUME_CHARS,
   MIN_JD_CHARS,
 } from "@/lib/limits";
+import { looksNonEnglish } from "@/lib/language";
 import { RateLimiter } from "@/lib/rateLimit";
 import { anthropicModel } from "@/lib/step1/anthropic";
 import { demoModel } from "@/lib/step1/demo";
@@ -29,7 +31,7 @@ export function createAnalyzeHandler(deps: AnalyzeDeps) {
   return async function analyze(req: Request): Promise<Response> {
     if (!originAllowed(req)) return errorResponse(403, "forbidden", FORBIDDEN_MESSAGE);
 
-    let body: { resumeText?: unknown; jobDescription?: unknown; confirmed?: unknown };
+    let body: { resumeText?: unknown; jobDescription?: unknown; confirmed?: unknown; additionalContext?: unknown; languageConfirmed?: unknown };
     try {
       body = (await req.json()) ?? {};
     } catch {
@@ -43,8 +45,12 @@ export function createAnalyzeHandler(deps: AnalyzeDeps) {
     if (typeof body.resumeText !== "string" || typeof body.jobDescription !== "string") {
       return errorResponse(400, "bad_request", "The request could not be read.");
     }
+    if (body.additionalContext !== undefined && typeof body.additionalContext !== "string") {
+      return errorResponse(400, "bad_request", "The request could not be read.");
+    }
     const resumeText = body.resumeText.trim();
     const jobDescription = body.jobDescription.trim();
+    const additionalContext = (body.additionalContext ?? "").trim();
 
     if (!resumeText) return errorResponse(422, "resume_empty", "The resume text is empty.");
     if (resumeText.length > MAX_RESUME_CHARS) {
@@ -55,6 +61,18 @@ export function createAnalyzeHandler(deps: AnalyzeDeps) {
     }
     if (jobDescription.length > MAX_JD_CHARS) {
       return errorResponse(422, "jd_too_long", "The job description is longer than 20,000 characters. Please shorten it.");
+    }
+    // REQ-IN-08: optional notes, at most 10,000 characters. The page caps the field too.
+    if (additionalContext.length > MAX_CONTEXT_CHARS) {
+      return errorResponse(422, "context_too_long", "The additional notes are longer than 10,000 characters. Please shorten them.");
+    }
+    // REQ-IN-09: non-English input needs the visitor's explicit go-ahead. The page asks for it too.
+    if ((looksNonEnglish(resumeText) || looksNonEnglish(jobDescription)) && body.languageConfirmed !== true) {
+      return errorResponse(
+        422,
+        "non_english_unconfirmed",
+        "The resume or job description doesn't look like English. Non-English input is not supported, so results may be wrong. Confirm to analyse it anyway.",
+      );
     }
 
     const hourly = deps.hourlyLimiter.take(clientIp(req));
@@ -71,7 +89,7 @@ export function createAnalyzeHandler(deps: AnalyzeDeps) {
     }
 
     try {
-      const outcome = await runStep1({ resumeText, jobDescription }, deps.model, deps.runOptions);
+      const outcome = await runStep1({ resumeText, jobDescription, additionalContext: additionalContext || undefined }, deps.model, deps.runOptions);
       if (outcome.ok) return json({ report: outcome.report });
       return errorResponse(STEP1_ERROR_STATUS[outcome.error.code], outcome.error.code, outcome.error.message);
     } catch (e) {

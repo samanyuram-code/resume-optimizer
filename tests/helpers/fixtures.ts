@@ -208,3 +208,30 @@ export function uploadRequest(bytes: Uint8Array, filename: string, opts: { type?
   if (opts.origin) headers.origin = opts.origin;
   return new Request("http://localhost:3000/api/extract", { method: "POST", body: form, headers });
 }
+
+// ---------- Non-English fixtures (REQ-IN-09) ----------
+
+export const SPANISH_RESUME_TEXT = [
+  "Lucía Fernández",
+  "Analista de Operaciones",
+  "Experiencia laboral",
+  "Logística del Norte | Analista de Operaciones | 2021 - Presente",
+  "• Responsable de los informes semanales de inventario para el equipo del almacén regional",
+  "• Ayudé al equipo con la incorporación de proveedores y la planificación de turnos",
+  "• Creé un modelo en Excel que redujo el tiempo de conciliación mensual en 6 horas",
+  "• Presenté los resultados de la cadena de suministro a los gerentes cada trimestre",
+  "Educación",
+  "Licenciatura en Administración de Empresas, Universidad Estatal, 2020",
+].join("\n");
+
+export const SPANISH_JOB_DESCRIPTION = `Analista Senior de Operaciones - Cadena de Suministro
+
+Buscamos un Analista Senior de Operaciones para unirse a nuestro equipo de cadena de suministro. Serás responsable de la previsión de la demanda, crearás paneles en Tableau y Power BI, y escribirás consultas SQL para encontrar ahorros.
+
+Responsabilidades:
+- Liderar la previsión de la demanda y la optimización del inventario en 12 centros de distribución.
+- Colaborar con el área de compras en la gestión de proveedores y la negociación de contratos.
+- Impulsar proyectos de mejora continua con métodos Lean Six Sigma.
+
+Requisitos:
+- Más de 4 años de experiencia en análisis de la cadena de suministro.`;

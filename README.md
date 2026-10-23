@@ -39,6 +39,15 @@ Known limits on Vercel:
 - Uploads over about 4.5 MB are rejected by Vercel itself, before they reach the app. The page shows a clear message when that happens.
 - The rate limit (10 analyses per visitor per hour) and the daily cap live in server memory, so they reset whenever Vercel starts a new instance.
 
+## Scope for HW3
+
+This build adds story US-IN-3: an optional **Additional notes** box (up to 10,000 characters) and a warning that must be confirmed when the resume or job description doesn't look like English. See "Scope for HW3" in [docs/requirements.md](docs/requirements.md).
+
+Non-goals for this build:
+- **Real payments.** Nothing is charged. Billing (US-BILL-*) is not built.
+- **Real authentication.** There is no sign-in. Anyone can use the page.
+- **A database.** Nothing is stored. Resumes, job descriptions and notes live only for one request. The rate-limit and daily-cap counters are kept in server memory and reset on every deploy.
+
 ## Security spec audit
 
 Audit of every requirement in [docs/SECURITY_SPEC.md](docs/SECURITY_SPEC.md) against the Story 1 build as of 2026-10-01. Story 1 has no accounts, no database, no payments and no exports, and it stores nothing (see [docs/STORY_1.md](docs/STORY_1.md)), so many requirements have nothing to apply to yet. Those are marked **Not at all**: the protection does not exist, even where the risk it covers doesn't exist yet either.

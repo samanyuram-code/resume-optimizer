@@ -71,4 +71,4 @@ IDs from `requirements.md` / `SECURITY_SPEC.md` are reused where the criterion i
 ## Known limits of this slice
 - Rate-limit and daily-cap counters are held in server memory. On Vercel they reset when an instance restarts and are not shared between instances, so they are best-effort only.
 - No upload sandbox (SEC-FILE-02) or malware scan (SEC-FILE-07). Files are parsed in memory and never stored or served back.
-- English only, no language check (REQ-IN-09). No additional-notes field (REQ-IN-08).
+- English only. Since HW3 (US-IN-3), non-English input shows a warning and needs confirmation (REQ-IN-09), and an optional notes field of up to 10,000 characters is accepted (REQ-IN-08). Step 1 uses the notes as background only; they matter once Step 2 is built (REQ-GEN-10).
